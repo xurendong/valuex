@@ -1,2 +1,0 @@
-# valuex
-strategy evaluation system
