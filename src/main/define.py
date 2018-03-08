@@ -19,14 +19,12 @@
 #
 # Be sure to retain the above copyright notices and conditions.
 
-import dbm_mysql
+APP_TITLE_EN = "ValueX" # 英文名称
+APP_TITLE_CN = "策 略 评 估 系 统" # 中文名称
+APP_VERSION = "V0.1.0-Beta Build 20180308" # 版本信息
+APP_DEVELOPER = "Developed by the X-Lab." # 开发者声明
+APP_COMPANY = "X-Lab (Shanghai) Co., Ltd." # 公司声明
+APP_COPYRIGHT = "Copyright 2018-2018 X-Lab All Rights Reserved." # 版权声明
+APP_HOMEURL = "http://www.xlab.com" # 主页链接
 
-if __name__ == "__main__":
-    dbm_financial = dbm_mysql.DBM_MySQL(host = "10.0.7.53", port = 3306, user = "user", passwd = "user", db = "financial", charset = "utf8")
-    if dbm_financial.Connect() == True:
-        sql = "SELECT TABLE_NAME " + \
-              "FROM information_schema.TABLES " + \
-              "WHERE TABLE_SCHEMA = 'financial'"
-        rows = dbm_financial.QueryAllSql(sql)
-        for (table_name,) in rows:
-            print(table_name)
+CFG_FILE_PATH_MAIN = "../etcs/cfg_main.ini"
