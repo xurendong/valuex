@@ -17,7 +17,7 @@
 # get a copy from the root directory. Certainly welcome you
 # to contribute code of all sorts.
 #
-# Be sure to retain the above copyright notices and conditions.
+# Be sure to retain the above copyright notice and conditions.
 
 APP_TITLE_EN = "ValueX" # 英文名称
 APP_TITLE_CN = "策 略 评 估 系 统" # 中文名称

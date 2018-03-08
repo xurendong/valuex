@@ -17,7 +17,7 @@
 # get a copy from the root directory. Certainly welcome you
 # to contribute code of all sorts.
 #
-# Be sure to retain the above copyright notices and conditions.
+# Be sure to retain the above copyright notice and conditions.
 
 import dbm_mysql
 
