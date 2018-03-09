@@ -19,6 +19,8 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
+# -*- coding: utf-8 -*-
+
 import time
 
 import pymysql as MySQLdb
@@ -81,12 +83,12 @@ class DBM_MySQL():
         while notConnect == True and tryTimes < 1000:
             try:
                 self.connect.ping()
-                notConnect = False #说明连接正常
+                notConnect = False # 说明连接正常
             except:
                 self.logText = "检测到数据库连接已断开！"
                 self.SendMessage("W", self.logCate, self.logText)
-                if self.Connect() == True: #重连成功
-                    notConnect = False #连接已经正常
+                if self.Connect() == True: # 重连成功
+                    notConnect = False # 连接已经正常
                     self.logText = "数据库重连成功。"
                     self.SendMessage("I", self.logCate, self.logText)
                     break
@@ -94,7 +96,7 @@ class DBM_MySQL():
                     tryTimes += 1
                     self.logText = "数据库重连失败！%d" % tryTimes
                     self.SendMessage("W", self.logCate, self.logText)
-                    time.sleep(5) #等待重试
+                    time.sleep(5) # 等待重试
 
     def ExecuteSql(self, sql):
         if self.connect == None:

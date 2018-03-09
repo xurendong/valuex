@@ -19,6 +19,8 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
+# -*- coding: utf-8 -*-
+
 import logging
 from datetime import datetime
 

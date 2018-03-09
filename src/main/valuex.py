@@ -19,14 +19,79 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
+# -*- coding: utf-8 -*-
+
+import numpy as np
+import pandas as pd
+
 import dbm_mysql
 
+try: import logger
+except: pass
+
+class ValueX():
+    def __init__(self):
+        self.logText = ""
+        self.logCate = "ValueX"
+        self.logShow = "V"
+        self.logInst = None
+        try: self.logInst = logger.Logger()
+        except: pass
+
+    def __del__(self):
+        pass
+
+    def SendMessage(self, logType, logCate, logInfo):
+        if self.logInst != None:
+            self.logInst.SendMessage(logType, logCate, logInfo, self.logShow)
+        else:
+            print("%s：%s：%s" % (logType, logCate, logInfo))
+
+    def InitValueX(self, **kwargs):
+        self.host = kwargs.get("host", "0.0.0.0")
+        self.port = kwargs.get("port", 0)
+        self.user = kwargs.get("user", "user")
+        self.passwd = kwargs.get("passwd", "123456")
+        self.charset = "utf8"
+        self.folder = kwargs.get("folder", "") # 数据文件缓存
+        self.db_clearx = "clearx"
+        self.tb_daily_report = "daily_report"
+        
+        self.dbm_clearx = dbm_mysql.DBM_MySQL(host = self.host, port = self.port, user = self.user, passwd = self.passwd, db = self.db_clearx, charset = self.charset) # db_clearx
+        if self.dbm_clearx.Connect() == True:
+            self.SendMessage("I", self.logCate, "清算数据库连接完成。")
+            return True
+        else:
+            self.SendMessage("E", self.logCate, "清算数据库连接失败！")
+            return False
+
+    def TransDateIntToStr(self, int_date):
+        year = int(int_date / 10000)
+        month = int((int_date % 10000) / 100)
+        day = int_date % 100
+        return "%d-%d-%d" % (year, month, day)
+
+    def GetDailyReport(self, account, date_s, date_e):
+        dbm = self.dbm_clearx
+        str_date_s = self.TransDateIntToStr(date_s)
+        str_date_e = self.TransDateIntToStr(date_e)
+        columns = ["trade_date", "account_id", "net_cumulative"]
+        result = pd.DataFrame(columns = columns) # 空
+        sql = "SELECT trade_date, account_id, net_cumulative " + \
+              "FROM %s " % self.tb_daily_report + \
+              "WHERE account_id = '%s' AND trade_date >= '%s' AND trade_date <= '%s'" % (account, str_date_s, str_date_e) + \
+              "ORDER BY trade_date ASC, account_id ASC"
+        rows = dbm.QueryAllSql(sql)
+        if len(rows) > 0:
+            result = pd.DataFrame(data = list(rows), columns = columns)
+        if result.empty:
+            self.SendMessage("W", self.logCate, "获取的 每日报表 为空！", self.logShow)
+        return result
+
 if __name__ == "__main__":
-    dbm_financial = dbm_mysql.DBM_MySQL(host = "10.0.7.53", port = 3306, user = "user", passwd = "user", db = "financial", charset = "utf8")
-    if dbm_financial.Connect() == True:
-        sql = "SELECT TABLE_NAME " + \
-              "FROM information_schema.TABLES " + \
-              "WHERE TABLE_SCHEMA = 'financial'"
-        rows = dbm_financial.QueryAllSql(sql)
-        for (table_name,) in rows:
-            print(table_name)
+    folder = "../data" # 缓存文件夹
+    valuex = ValueX()
+    if valuex.InitValueX(host = "10.0.7.53", port = 3306, user = "user", passwd = "user", folder = folder) == True:
+        result = valuex.GetDailyReport("LHTZ_20170428001_000", 20170101, 20180228)
+        if not result.empty:
+            print(result)
