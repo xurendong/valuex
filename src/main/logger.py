@@ -50,13 +50,13 @@ logger.addHandler(console)
 
 class Logger(common.Singleton):
     def __init__(self):
-        self.logInst = logger
+        self.log_inst = logger
 
     def __del__(self):
         pass
 
-    def SendMessage(self, logType, logCate, logInfo, logShow = ""):
-        if logType == "D" or logType == "I" or logType == "H" or logType == "W":
-            self.logInst.debug(logInfo)
-        elif logType == "E" or logType == "F":
-            self.logInst.error(logInfo)
+    def SendMessage(self, log_type, log_cate, log_info, log_show = ""):
+        if log_type == "D" or log_type == "I" or log_type == "H" or log_type == "W":
+            self.log_inst.debug("%s %s %s" % (log_type, log_cate, log_info))
+        elif log_type == "E" or log_type == "F":
+            self.log_inst.error("%s %s %s" % (log_type, log_cate, log_info))

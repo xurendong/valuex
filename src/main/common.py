@@ -27,7 +27,7 @@ from datetime import datetime
 class Singleton(object):
     objs = {}
     objs_locker = threading.Lock()
-    
+
     def __new__(cls, *args, **kv):
         if cls in cls.objs:
             return cls.objs[cls]['obj']
@@ -43,7 +43,7 @@ class Singleton(object):
             cls.objs_locker.release()
         
         return cls.objs[cls]['obj']
-    
+
     @classmethod
     def decorate_init(cls, fn):
         def init_wrap(*args):
@@ -56,8 +56,8 @@ class Singleton(object):
         
         return init_wrap
 
-def getDateShort():
+def GetDateShort():
     return datetime.now().strftime("%Y-%m-%d")
 
-def getTimeShort():
+def GetTimeShort():
     return datetime.now().strftime("%H:%M:%S")

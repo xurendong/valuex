@@ -31,21 +31,21 @@ except: pass
 
 class ValueX():
     def __init__(self):
-        self.logText = ""
-        self.logCate = "ValueX"
-        self.logShow = "V"
-        self.logInst = None
-        try: self.logInst = logger.Logger()
+        self.log_text = ""
+        self.log_cate = "ValueX"
+        self.log_show = "V"
+        self.log_inst = None
+        try: self.log_inst = logger.Logger()
         except: pass
 
     def __del__(self):
         pass
 
-    def SendMessage(self, logType, logCate, logInfo):
-        if self.logInst != None:
-            self.logInst.SendMessage(logType, logCate, logInfo, self.logShow)
+    def SendMessage(self, log_type, log_cate, log_info):
+        if self.log_inst != None:
+            self.log_inst.SendMessage(log_type, log_cate, log_info, self.log_show)
         else:
-            print("%s：%s：%s" % (logType, logCate, logInfo))
+            print("%s：%s：%s" % (log_type, log_cate, log_info))
 
     def InitValueX(self, **kwargs):
         self.host = kwargs.get("host", "0.0.0.0")
@@ -59,10 +59,10 @@ class ValueX():
         
         self.dbm_clearx = dbm_mysql.DBM_MySQL(host = self.host, port = self.port, user = self.user, passwd = self.passwd, db = self.db_clearx, charset = self.charset) # db_clearx
         if self.dbm_clearx.Connect() == True:
-            self.SendMessage("I", self.logCate, "清算数据库连接完成。")
+            self.SendMessage("I", self.log_cate, "清算数据库连接完成。")
             return True
         else:
-            self.SendMessage("E", self.logCate, "清算数据库连接失败！")
+            self.SendMessage("E", self.log_cate, "清算数据库连接失败！")
             return False
 
     def TransDateIntToStr(self, int_date):
@@ -85,7 +85,7 @@ class ValueX():
         if len(rows) > 0:
             result = pd.DataFrame(data = list(rows), columns = columns)
         if result.empty:
-            self.SendMessage("W", self.logCate, "获取的 每日报表 为空！", self.logShow)
+            self.SendMessage("W", self.log_cate, "获取的 每日报表 为空！")
         return result
 
 if __name__ == "__main__":
