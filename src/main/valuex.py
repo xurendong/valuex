@@ -65,7 +65,7 @@ class ValueX():
         
         self.folder_clearx = ""
         if self.folder != "":
-            self.folder_clearx = self.folder.decode('utf-8') + "/clearx" # 可能路径含中文
+            self.folder_clearx = self.folder + "/clearx"
             if not os.path.exists(self.folder_clearx):
                 os.makedirs(self.folder_clearx)
         
