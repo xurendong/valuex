@@ -1,4 +1,6 @@
 
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2018-2018 the ValueX authors
 # All rights reserved.
 #
@@ -18,8 +20,6 @@
 # to contribute code of all sorts.
 #
 # Be sure to retain the above copyright notice and conditions.
-
-# -*- coding: utf-8 -*-
 
 import logging
 from datetime import datetime
@@ -57,6 +57,6 @@ class Logger(common.Singleton):
 
     def SendMessage(self, log_type, log_cate, log_info, log_show = ""):
         if log_type == "D" or log_type == "I" or log_type == "H" or log_type == "W":
-            self.log_inst.debug("%s %s %s" % (log_type, log_cate, log_info))
+            self.log_inst.debug("%s <%s> - %s" % (log_type, log_cate, log_info))
         elif log_type == "E" or log_type == "F":
-            self.log_inst.error("%s %s %s" % (log_type, log_cate, log_info))
+            self.log_inst.error("%s <%s> - %s" % (log_type, log_cate, log_info))

@@ -1,4 +1,6 @@
 
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2018-2018 the ValueX authors
 # All rights reserved.
 #
@@ -18,8 +20,6 @@
 # to contribute code of all sorts.
 #
 # Be sure to retain the above copyright notice and conditions.
-
-# -*- coding: utf-8 -*-
 
 import time
 
