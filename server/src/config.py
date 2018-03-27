@@ -21,11 +21,16 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
-import os
-import sys
+class BasicConfig: # 基本
+    items_per_page = 10
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+class Config_P(BasicConfig): # 生产
+    produce = True
 
-from valuex import app
+class Config_D(BasicConfig): # 开发
+    develop = True
 
-application = app
+class Config_T(BasicConfig): # 测试
+    testing = True
+
+config = {"config_p" : Config_P, "config_d" : Config_D, "config_t" : Config_T}
