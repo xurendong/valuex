@@ -15,7 +15,7 @@
 
     <el-upload class="upload-demo"
         ref="upload"
-        action="http://127.0.0.1:8080/"
+        action="http://127.0.0.1:8080/upload_file"
         :on-preview="handlePreview"
         :on-remove="handleRemove"
         :file-list="fileList"

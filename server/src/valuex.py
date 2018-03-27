@@ -46,7 +46,7 @@ def get_random():
     response = { "randomNumber" : random.randint(1, 100) }
     return jsonify(response)
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
     if request.method == "POST":
         for f in request.files.getlist("file"):
