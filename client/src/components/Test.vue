@@ -9,7 +9,7 @@
             <h1>{{$t("message.title")}}</h1>
             <input style="width: 300px;" class="form-control" :placeholder="$t('placeholder.enter')">
             <ul>
-                <li v-for="brand in brands">{{brand}}</li>
+                <li v-for="brand in brands" :key="brand.id">{{brand}}</li>
             </ul>
         </div>
 

@@ -23,6 +23,7 @@
 import Vue from "vue";
 import App from "./App";
 import router from "./router";
+import VueResource from "vue-resource";
 
 import ElementUI from "element-ui";
 import "element-ui/lib/theme-chalk/index.css";
@@ -31,6 +32,7 @@ import VueI18n from "vue-i18n";
 import enLocale from "element-ui/lib/locale/lang/en";
 import zhLocale from "element-ui/lib/locale/lang/zh-CN";
 
+Vue.use(VueResource);
 Vue.use(VueI18n);
 
 const i18n = new VueI18n({
@@ -46,10 +48,24 @@ Vue.use(ElementUI, { i18n: (key, value) => i18n.t(key, value), size: "small" });
 
 Vue.config.productionTip = false;
 
-new Vue({
-    el: "#app",
+var instance = new Vue({
+    el: "#app", // document.getElementById("app") 否则需要 instance.$mount("#app")
     i18n,
     router,
     components: { App },
     template: "<App/>"
 });
+
+Vue.http.interceptors.push((request, next) => {  
+    //                  console.log(Login.item);  
+                        var tokens = localStorage.getItem('token');  
+                        request.headers.set('Authorization', tokens);  
+    //                  console.log(request.headers);  
+                        help.showLoading = true;  
+                          
+                        next((response) => {  
+    //                      console.log(response);  
+                            help.showLoading = false;  
+                            return response  
+                        })  
+                    });

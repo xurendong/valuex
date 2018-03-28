@@ -24,39 +24,86 @@
 import os
 import random
 
-from flask import Flask, render_template, request, jsonify
+import flask
+import flask_restful
+from flask_restful import reqparse # 直接用 flask_restful.reqparse.RequestParser() 会报 reqparse 不存在
 
 import config
 
-app = Flask(__name__, static_folder = "../../public/static", template_folder = "../../public")
+app = flask.Flask(__name__, static_folder = "../../public/static", template_folder = "../../public")
 app.config.from_object(config.config["config_d"])
 app.config["upload_path"] = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
 
+api = flask_restful.Api(app)
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return flask.render_template("index.html")
 
 @app.route("/hello")
 def hello():
-    name = request.args.get("name", "")
+    name = flask.request.args.get("name", "")
     return "Hello " + name + "!"
 
 @app.route("/random")
 def get_random():
-    response = { "randomNumber" : random.randint(1, 100) }
-    return jsonify(response)
+    response = { "randomNumber": random.randint(1, 100) }
+    return flask.jsonify(response)
 
 @app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
-    if request.method == "POST":
-        for f in request.files.getlist("file"):
+    if flask.request.method == "POST":
+        for f in flask.request.files.getlist("file"):
             f.save(os.path.join(app.config["upload_path"], f.filename))
-    return render_template("index.html")
+    return flask.render_template("index.html")
 
-@app.route("/", defaults = {"path" : ""})
+@app.route("/", defaults = {"path": ""})
 @app.route("/<path:path>")
 def catch_all(path):
-    return render_template("index.html")
+    return flask.render_template("index.html")
+
+task_to_do = {
+    "task_1": {"task": "build an API"},
+    "task_2": {"task": "啦啦啦啦啦"},
+    "task_3": {"task": "profit!"},
+}
+
+parser = reqparse.RequestParser()
+parser.add_argument("workname")
+
+def abort_if_task_not_exist(task_id):
+    if task_id not in task_to_do:
+        flask_restful.abort(404, message="Task {} not exist".format(task_id))
+
+class Restful(flask_restful.Resource):
+    def get(self):
+        return task_to_do
+
+    def post(self):
+        args = parser.parse_args()
+        task_id = "task_%d" % (len(task_to_do.keys()) + 1)
+        task_to_do[task_id] = {"task": args["workname"]}
+        return task_to_do[task_id], 201
+
+class Restful_TaskID(flask_restful.Resource):
+    def get(self, task_id):
+        abort_if_task_not_exist(task_id)
+        return task_to_do[task_id]
+
+    def delete(self, task_id):
+        abort_if_task_not_exist(task_id)
+        del task_to_do[task_id]
+        return "", 204
+
+    def put(self, task_id):
+        abort_if_task_not_exist(task_id) # 不存在不自动添加
+        args = parser.parse_args()
+        task = {"task": args["workname"]}
+        task_to_do[task_id] = task
+        return task, 201
+
+api.add_resource(Restful, "/restful")
+api.add_resource(Restful_TaskID, "/restful/<task_id>")
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", port = 8080)

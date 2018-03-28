@@ -10,6 +10,22 @@
             <div slot="tip" class="el-upload__tip">格式限制：xlsx，大小限制：1MB</div>
         </el-upload>
 
+        <div style="margin:10px;">
+            <el-input style="width: 300px;" :placeholder="placeholder_text" v-model="task_id_input"></el-input>
+        </div>
+        <div style="margin:10px;">
+            <el-button size="small" type="primary" @click="GetAllTasks">列表</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="primary" @click="AddOneTask">增加</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="primary" @click="GetOneTask">单个</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="primary" @click="DelOneTask">删除</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="primary" @click="UpdateOneTask">更新</el-button>
+        </div>
+        <div style="margin:10px;">
+            <ul>
+                <li v-for="(value, key) in task_dict" :key="value.id">{{key}}: {{value.task}}</li>
+            </ul>
+        </div>
+
     </div>
 </template>
 
@@ -18,7 +34,10 @@ export default {
     data() {
         return {
             file_limit: 5,
-            file_list: []
+            file_list: [],
+            placeholder_text: "输入任务编号",
+            task_id_input: '',
+            task_dict: {}
         };
     },
     methods: {
@@ -70,6 +89,81 @@ export default {
             }
         },
         HandleProgress(event, file, fileList) {
+        },
+        GetAllTasks() {
+            this.$http.get("http://127.0.0.1:8080/restful", {
+                // 设置参数
+            }).then((response) => {
+                this.$message.success("列表 task 成功。");
+                console.log(response.body);
+                this.task_dict = response.body;
+            }, (response) => {
+                this.$message.error("列表 task 失败！");
+                console.log(response);
+            }).catch(function(response) {
+                this.$message.error("列表 task 异常！");
+                console.log(response);
+            });
+        },
+        AddOneTask() {
+            this.$http.post("http://127.0.0.1:8080/restful?workname=something_add", {
+                // 设置参数
+            }).then((response) => {
+                this.$message.success("增加 task 成功。");
+                console.log(response.body);
+                this.GetAllTasks();
+            }, (response) => {
+                this.$message.error("增加 task 失败！");
+                console.log(response);
+            }).catch(function(response) {
+                this.$message.error("增加 task 异常！");
+                console.log(response);
+            });
+        },
+        GetOneTask() {
+            this.$http.get(`http://127.0.0.1:8080/restful/${this.task_id_input}`, {
+                // 设置参数
+            }).then((response) => {
+                this.$message.success("单个 task 成功。");
+                console.log(response.body);
+                this.$notify.info({ title: '任务', message: `${response.body.task}` });
+            }, (response) => {
+                this.$message.error("单个 task 失败！");
+                console.log(response);
+            }).catch(function(response) {
+                this.$message.error("单个 task 异常！");
+                console.log(response);
+            });
+        },
+        DelOneTask() {
+            this.$http.delete(`http://127.0.0.1:8080/restful/${this.task_id_input}`, {
+                // 设置参数
+            }).then((response) => {
+                this.$message.success("删除 task 成功。");
+                console.log(response.body);
+                this.GetAllTasks();
+            }, (response) => {
+                this.$message.error("删除 task 失败！");
+                console.log(response);
+            }).catch(function(response) {
+                this.$message.error("删除 task 异常！");
+                console.log(response);
+            });
+        },
+        UpdateOneTask() {
+            this.$http.put(`http://127.0.0.1:8080/restful/${this.task_id_input}?workname=something_update`, {
+                // 设置参数
+            }).then((response) => {
+                this.$message.success("更新 task 成功。");
+                console.log(response.body);
+                this.GetAllTasks();
+            }, (response) => {
+                this.$message.error("更新 task 失败！");
+                console.log(response);
+            }).catch(function(response) {
+                this.$message.error("更新 task 异常！");
+                console.log(response);
+            });
         }
     }
 };
