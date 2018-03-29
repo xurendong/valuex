@@ -22,14 +22,18 @@
 # Be sure to retain the above copyright notice and conditions.
 
 import os
+import time
 import random
 
 import flask
 import werkzeug
 import flask_restful
+import flask_socketio
 from flask_restful import reqparse # 直接用 flask_restful.reqparse.RequestParser() 会报 reqparse 不存在
 
 import config
+
+# -------------------------------------------------- #
 
 class Response_CORS(flask.Response):
     def __init__(self, response = None, **kwargs):
@@ -46,12 +50,18 @@ class Response_CORS(flask.Response):
         kwargs["headers"] = headers
         super().__init__(response, **kwargs)
 
+# -------------------------------------------------- #
+
 app = flask.Flask(__name__, static_folder = "../../public/static", template_folder = "../../public")
 app.response_class = Response_CORS
 app.config.from_object(config.config["config_d"])
+app.config["SECRET_KEY"] = "secret!"
 app.config["upload_path"] = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
 
 api = flask_restful.Api(app)
+socketio = flask_socketio.SocketIO(app)
+
+# -------------------------------------------------- #
 
 @app.route("/")
 def index():
@@ -78,6 +88,8 @@ def upload_file():
 @app.route("/<path:path>")
 def catch_all(path):
     return flask.render_template("index.html")
+
+# -------------------------------------------------- #
 
 task_to_do = {
     "task_1": {"task": "build an API"},
@@ -122,5 +134,27 @@ class Restful_TaskID(flask_restful.Resource):
 api.add_resource(Restful, "/restful")
 api.add_resource(Restful_TaskID, "/restful/<task_id>")
 
+# -------------------------------------------------- #
+
+@socketio.on("my_event", namespace = "/test_sio")
+def test_message(message):
+    flask_socketio.emit("my_response", {"data": message["msg"]})
+
+@socketio.on("my_broadcast_event", namespace = "/test_sio")
+def test_broadcast(message):
+    flask_socketio.emit("my_response", {"data": message["msg"]}, broadcast = True)
+
+@socketio.on("connect", namespace = "/test_sio")
+def test_connect():
+    flask_socketio.emit("my_response", {"data": "connected"})
+    print("client connect")
+
+@socketio.on("disconnect", namespace = "/test_sio")
+def test_disconnect():
+    print("client disconnect")
+
+# -------------------------------------------------- #
+
 if __name__ == "__main__":
-    app.run(host = "0.0.0.0", port = 8080)
+    #app.run(host = "0.0.0.0", port = 8080) # 使用 Apache 等，无法使用 WebSocket 协议
+    socketio.run(app, host = "0.0.0.0", port = 8080) # 使用 eventlet 或 gevent 甚至 gunicorn 等，可以使用 WebSocket 协议

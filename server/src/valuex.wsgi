@@ -26,6 +26,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from valuex import app
+import valuex
 
-application = app
+application = valuex.app

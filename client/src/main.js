@@ -24,6 +24,8 @@ import Vue from "vue";
 import App from "./App";
 import router from "./router";
 import VueResource from "vue-resource";
+import VueSocketio from 'vue-socket.io';
+import socketio from 'socket.io-client';
 
 import ElementUI from "element-ui";
 import "element-ui/lib/theme-chalk/index.css";
@@ -33,6 +35,7 @@ import enLocale from "element-ui/lib/locale/lang/en";
 import zhLocale from "element-ui/lib/locale/lang/zh-CN";
 
 Vue.use(VueResource);
+Vue.use(VueSocketio, socketio("http://127.0.0.1:8080/test_sio"));
 Vue.use(VueI18n);
 
 const i18n = new VueI18n({

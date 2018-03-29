@@ -28,6 +28,11 @@
             </ul>
         </div>
 
+        <div style="margin:10px;">
+            <el-button size="small" type="primary" @click="TestSocketIO">SocketIO</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="primary" @click="TestSocketIO_Broadcast">Broadcast</el-button>
+        </div>
+
     </div>
 </template>
 
@@ -40,9 +45,13 @@ export default {
             type_limit: ["xls", "xlsx", "csv"],
             file_list: [],
             placeholder_text: "输入任务编号",
-            task_id_input: '',
-            task_dict: {}
+            task_id_input: "",
+            task_dict: {},
+            socket_id: "",
+            socket_connect: false
         };
+    },
+    created() {
     },
     methods: {
         SubmitUpload() {
@@ -176,6 +185,44 @@ export default {
                 this.$message.error("更新 task 异常！");
                 console.log(response);
             });
+        },
+        TestSocketIO() {
+            this.$socket.emit("my_event", { msg: "Hello World" });
+        },
+        TestSocketIO_Broadcast() {
+            this.$socket.emit("my_event", { msg: "Hello World - Broadcast" });
+        }
+    },
+    sockets: {
+        connect: function() {
+            this.socket_id = this.$socket.id;
+            this.socket_connect = true;
+            console.log("socket connect:");
+        },
+        reconnect: function(times) {
+            console.log("socket reconnect: " + times);
+        },
+        reconnect_attempt: function(times) {
+            console.log("socket reconnect_attempt: " + times);
+        },
+        reconnecting: function(times) {
+            console.log("socket reconnecting: " + times);
+        },
+        reconnect_error: function(error) {
+            console.log("socket reconnect_error: " + error);
+        },
+        reconnect_failed: function(info) {
+            console.log("socket reconnect_failed: " + info);
+        },
+        disconnect: function(info) {
+            console.log("socket disconnect: " + info);
+        },
+        error: function(error) {
+            console.log("socket error: " + error);
+        },
+        my_response: function(data){
+            console.log("server data received:");
+            console.log(data);
         }
     }
 };
