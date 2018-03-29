@@ -56,16 +56,16 @@ var instance = new Vue({
     template: "<App/>"
 });
 
-Vue.http.interceptors.push((request, next) => {  
-    //                  console.log(Login.item);  
-                        var tokens = localStorage.getItem('token');  
-                        request.headers.set('Authorization', tokens);  
-    //                  console.log(request.headers);  
-                        help.showLoading = true;  
-                          
-                        next((response) => {  
-    //                      console.log(response);  
-                            help.showLoading = false;  
-                            return response  
-                        })  
-                    });
+Vue.http.interceptors.push((request, next) => { // vue-resource 拦截
+        // request.method = 'POST'; // 在请求之前可以进行一些预处理和配置
+        // console.log(Login.item);
+        // var tokens = localStorage.getItem('token');
+        // request.headers.set('Authorization', tokens);
+        // console.log(request.headers);
+        // help.showLoading = true;
+    next((response) => {
+        // console.log(response);
+        // help.showLoading = false;
+        return response;
+    })
+});

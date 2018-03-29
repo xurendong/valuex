@@ -25,12 +25,29 @@ import os
 import random
 
 import flask
+import werkzeug
 import flask_restful
 from flask_restful import reqparse # 直接用 flask_restful.reqparse.RequestParser() 会报 reqparse 不存在
 
 import config
 
+class Response_CORS(flask.Response):
+    def __init__(self, response = None, **kwargs):
+        allow_origin = ("Access-Control-Allow-Origin", "*")
+        allow_methods = ("Access-Control-Allow-Methods", "HEAD, OPTIONS, GET, PUT, POST, DELETE")
+        allow_headers = ("Access-Control-Allow-Headers", "Content-Type, Content-Length, Authorization, Accept, X-Requested-With, Referer, Origin, User-Agent")
+        headers = kwargs.get("headers")
+        if headers:
+            headers.add(*allow_origin)
+            headers.add(*allow_methods)
+            headers.add(*allow_headers)
+        else:
+            headers = werkzeug.datastructures.Headers([allow_origin, allow_methods, allow_headers])
+        kwargs["headers"] = headers
+        super().__init__(response, **kwargs)
+
 app = flask.Flask(__name__, static_folder = "../../public/static", template_folder = "../../public")
+app.response_class = Response_CORS
 app.config.from_object(config.config["config_d"])
 app.config["upload_path"] = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
 
