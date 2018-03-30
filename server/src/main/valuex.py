@@ -22,41 +22,22 @@
 # Be sure to retain the above copyright notice and conditions.
 
 import os
-import time
-import random
 
 import flask
-import werkzeug
+import flask_cors
 import flask_restful
 import flask_socketio
-from flask_restful import reqparse # 直接用 flask_restful.reqparse.RequestParser() 会报 reqparse 不存在
+from flask_restful import reqparse
 
 import config
 
 # -------------------------------------------------- #
 
-class Response_CORS(flask.Response):
-    def __init__(self, response = None, **kwargs):
-        allow_origin = ("Access-Control-Allow-Origin", "*")
-        allow_methods = ("Access-Control-Allow-Methods", "HEAD, OPTIONS, GET, PUT, POST, DELETE")
-        allow_headers = ("Access-Control-Allow-Headers", "Content-Type, Content-Length, Authorization, Accept, X-Requested-With, Referer, Origin, User-Agent")
-        headers = kwargs.get("headers")
-        if headers:
-            headers.add(*allow_origin)
-            headers.add(*allow_methods)
-            headers.add(*allow_headers)
-        else:
-            headers = werkzeug.datastructures.Headers([allow_origin, allow_methods, allow_headers])
-        kwargs["headers"] = headers
-        super().__init__(response, **kwargs)
-
-# -------------------------------------------------- #
-
 app = flask.Flask(__name__, static_folder = "../../../public/static", template_folder = "../../../public")
-app.response_class = Response_CORS
 app.config.from_object(config.config["config_d"])
-app.config["SECRET_KEY"] = "secret!"
 app.config["upload_path"] = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
+
+flask_cors.CORS(app, supports_credentials = True)
 
 api = flask_restful.Api(app)
 socketio = flask_socketio.SocketIO(app)
@@ -66,16 +47,6 @@ socketio = flask_socketio.SocketIO(app)
 @app.route("/")
 def index():
     return flask.render_template("index.html")
-
-@app.route("/hello")
-def hello():
-    name = flask.request.args.get("name", "")
-    return "Hello " + name + "!"
-
-@app.route("/random")
-def get_random():
-    response = { "random_number": random.randint(1, 100) }
-    return flask.jsonify(response)
 
 @app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
@@ -91,62 +62,6 @@ def catch_all(path):
     return flask.render_template("index.html")
 
 # -------------------------------------------------- #
-
-task_to_do = {
-    1: {"task": "build an API"},
-    2: {"task": "啦啦啦啦啦"},
-    3: {"task": "profit!"},
-}
-
-parser = reqparse.RequestParser()
-parser.add_argument("workname")
-
-def abort_if_task_not_exist(task_id):
-    if task_id not in task_to_do:
-        flask_restful.abort(404, message="Task {} not exist".format(task_id))
-
-class Restful(flask_restful.Resource):
-    def get(self):
-        return task_to_do
-
-    def post(self):
-        args = parser.parse_args()
-        task_id = max(task_to_do.keys()) + 1
-        task_to_do[task_id] = {"task": args["workname"]}
-        return task_to_do[task_id], 201
-
-class Restful_TaskID(flask_restful.Resource):
-    def get(self, task_id):
-        task_id = int(task_id)
-        abort_if_task_not_exist(task_id)
-        return task_to_do[task_id]
-
-    def delete(self, task_id):
-        task_id = int(task_id)
-        abort_if_task_not_exist(task_id)
-        del task_to_do[task_id]
-        return "", 204
-
-    def put(self, task_id):
-        task_id = int(task_id)
-        abort_if_task_not_exist(task_id) # 不存在不自动添加
-        args = parser.parse_args()
-        task = {"task": args["workname"]}
-        task_to_do[task_id] = task
-        return task, 201
-
-api.add_resource(Restful, "/restful")
-api.add_resource(Restful_TaskID, "/restful/<task_id>")
-
-# -------------------------------------------------- #
-
-@socketio.on("my_event", namespace = "/test_sio")
-def test_message(message):
-    flask_socketio.emit("my_response", {"data": message["msg"]})
-
-@socketio.on("my_broadcast_event", namespace = "/test_sio")
-def test_broadcast(message):
-    flask_socketio.emit("my_response", {"data": message["msg"]}, broadcast = True)
 
 @socketio.on("connect", namespace = "/test_sio")
 def test_connect():

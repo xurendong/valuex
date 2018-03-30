@@ -2,10 +2,10 @@
     <div>
 
         <div style="margin:10px;">
-            <el-upload class="upload-demo" ref="upload" action="http://127.0.0.1:8080/upload_file" list-type="picture"
+            <el-upload class="upload-file" ref="upload" :action="upload_url" list-type="picture"
                 :on-preview="HandlePreview" :on-remove="HandleRemove" :before-remove="BeforeRemove" :on-exceed="HandleExceed"
                 :on-success="HandleSuccess" :before-upload="BeforeUpload" :on-change="HandleChange" :on-error="HandleError"
-                :on-progress="HandleProgress" :limit="file_limit" :file-list="file_list" :with-credentials="false" :auto-upload="false">
+                :on-progress="HandleProgress" :limit="file_limit" :file-list="file_list" :with-credentials="true" :auto-upload="false">
                 <el-button slot="trigger" size="small" type="primary">添加文件</el-button>
                 <el-button style="margin-left: 10px;" size="small" type="success" @click="SubmitUpload">上传文件</el-button>
                 <div slot="tip" class="el-upload__tip">格式限制：xls xlsx csv，大小限制：5 MB</div>
@@ -19,6 +19,7 @@
 export default {
     data() {
         return {
+            upload_url: "http://127.0.0.1:8080/upload_file",
             file_limit: 1,
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
@@ -89,6 +90,36 @@ export default {
             };
         },
         HandleProgress(event, file, file_list) {
+        }
+    },
+    sockets: {
+        connect: function() {
+            console.log("socket connect:");
+        },
+        reconnect: function(times) {
+            console.log("socket reconnect: " + times);
+        },
+        reconnect_attempt: function(times) {
+            console.log("socket reconnect_attempt: " + times);
+        },
+        reconnecting: function(times) {
+            console.log("socket reconnecting: " + times);
+        },
+        reconnect_error: function(error) {
+            console.log("socket reconnect_error: " + error);
+        },
+        reconnect_failed: function(info) {
+            console.log("socket reconnect_failed: " + info);
+        },
+        disconnect: function(info) {
+            console.log("socket disconnect: " + info);
+        },
+        error: function(error) {
+            console.log("socket error: " + error);
+        },
+        my_response: function(data){
+            console.log("server data received:");
+            console.log(data);
         }
     }
 };

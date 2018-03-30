@@ -63,12 +63,10 @@ export default {
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
             file_list: [],
-            credentials: false, // 如果 true 则报：Credential is not supported if the CORS header ‘Access-Control-Allow-Origin’ is ‘*’
+            credentials: false, // 如果 true 则报：Credential is not supported if the CORS header ‘Access-Control-Allow-Origin’ is ‘*’，需要服务端开启
             placeholder_text: "输入任务编号",
             task_id_input: "",
-            task_dict: {},
-            socket_id: "",
-            socket_connect: false
+            task_dict: {}
         };
     },
     created() {
@@ -254,8 +252,6 @@ export default {
     },
     sockets: {
         connect: function() {
-            this.socket_id = this.$socket.id;
-            this.socket_connect = true;
             console.log("socket connect:");
         },
         reconnect: function(times) {
