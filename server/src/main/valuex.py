@@ -52,7 +52,7 @@ class Response_CORS(flask.Response):
 
 # -------------------------------------------------- #
 
-app = flask.Flask(__name__, static_folder = "../../public/static", template_folder = "../../public")
+app = flask.Flask(__name__, static_folder = "../../../public/static", template_folder = "../../../public")
 app.response_class = Response_CORS
 app.config.from_object(config.config["config_d"])
 app.config["SECRET_KEY"] = "secret!"
@@ -74,7 +74,7 @@ def hello():
 
 @app.route("/random")
 def get_random():
-    response = { "randomNumber": random.randint(1, 100) }
+    response = { "random_number": random.randint(1, 100) }
     return flask.jsonify(response)
 
 @app.route("/upload_file", methods=["GET", "POST"])
@@ -82,7 +82,8 @@ def upload_file():
     if flask.request.method == "POST":
         for f in flask.request.files.getlist("file"):
             f.save(os.path.join(app.config["upload_path"], f.filename))
-    return flask.render_template("index.html")
+    response = { "status": 1, "message": "upload success!" }
+    return flask.jsonify(response)
 
 @app.route("/", defaults = {"path": ""})
 @app.route("/<path:path>")
@@ -92,9 +93,9 @@ def catch_all(path):
 # -------------------------------------------------- #
 
 task_to_do = {
-    "task_1": {"task": "build an API"},
-    "task_2": {"task": "啦啦啦啦啦"},
-    "task_3": {"task": "profit!"},
+    1: {"task": "build an API"},
+    2: {"task": "啦啦啦啦啦"},
+    3: {"task": "profit!"},
 }
 
 parser = reqparse.RequestParser()
@@ -110,21 +111,24 @@ class Restful(flask_restful.Resource):
 
     def post(self):
         args = parser.parse_args()
-        task_id = "task_%d" % (len(task_to_do.keys()) + 1)
+        task_id = max(task_to_do.keys()) + 1
         task_to_do[task_id] = {"task": args["workname"]}
         return task_to_do[task_id], 201
 
 class Restful_TaskID(flask_restful.Resource):
     def get(self, task_id):
+        task_id = int(task_id)
         abort_if_task_not_exist(task_id)
         return task_to_do[task_id]
 
     def delete(self, task_id):
+        task_id = int(task_id)
         abort_if_task_not_exist(task_id)
         del task_to_do[task_id]
         return "", 204
 
     def put(self, task_id):
+        task_id = int(task_id)
         abort_if_task_not_exist(task_id) # 不存在不自动添加
         args = parser.parse_args()
         task = {"task": args["workname"]}

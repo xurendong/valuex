@@ -5,32 +5,11 @@
             <el-upload class="upload-demo" ref="upload" action="http://127.0.0.1:8080/upload_file" list-type="picture"
                 :on-preview="HandlePreview" :on-remove="HandleRemove" :before-remove="BeforeRemove" :on-exceed="HandleExceed"
                 :on-success="HandleSuccess" :before-upload="BeforeUpload" :on-change="HandleChange" :on-error="HandleError"
-                :on-progress="HandleProgress" :limit="file_limit" :file-list="file_list" :auto-upload="false">
+                :on-progress="HandleProgress" :limit="file_limit" :file-list="file_list" :with-credentials="false" :auto-upload="false">
                 <el-button slot="trigger" size="small" type="primary">添加文件</el-button>
                 <el-button style="margin-left: 10px;" size="small" type="success" @click="SubmitUpload">上传文件</el-button>
                 <div slot="tip" class="el-upload__tip">格式限制：xls xlsx csv，大小限制：5 MB</div>
             </el-upload>
-        </div>
-
-        <div style="margin:10px;">
-            <el-input style="width: 300px;" :placeholder="placeholder_text" v-model="task_id_input"></el-input>
-        </div>
-        <div style="margin:10px;">
-            <el-button size="small" type="primary" @click="GetAllTasks">列表</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="primary" @click="AddOneTask">增加</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="primary" @click="GetOneTask">单个</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="primary" @click="DelOneTask">删除</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="primary" @click="UpdateOneTask">更新</el-button>
-        </div>
-        <div style="margin:10px;">
-            <ul>
-                <li v-for="(value, key) in task_dict" :key="value.id">{{key}}: {{value.task}}</li>
-            </ul>
-        </div>
-
-        <div style="margin:10px;">
-            <el-button size="small" type="primary" @click="TestSocketIO">SocketIO</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="primary" @click="TestSocketIO_Broadcast">Broadcast</el-button>
         </div>
 
     </div>
@@ -43,12 +22,7 @@ export default {
             file_limit: 1,
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
-            file_list: [],
-            placeholder_text: "输入任务编号",
-            task_id_input: "",
-            task_dict: {},
-            socket_id: "",
-            socket_connect: false
+            file_list: []
         };
     },
     created() {
@@ -61,6 +35,7 @@ export default {
             console.log(file, file_list);
         },
         HandlePreview(file) {
+            // 可以通过 file.response 拿到服务端返回数据
             console.log(file);
         },
         BeforeRemove(file, file_list) {
@@ -71,13 +46,17 @@ export default {
         },
         HandleSuccess(response, file, file_list) {
             console.log(response);
-            console.log(file.name);
             console.log(file.raw);
             var fileUrl = URL.createObjectURL(file.raw);
             console.log(fileUrl);
+            if (response.status === 1) {
+                this.$message.info(`文件 ${file.name} 上传成功。${response.message}`);
+            } else {
+                this.$message.info(`文件 ${file.name} 上传失败！${response.message}`);
+            };
         },
-        HandleError(err, file, file_list) {
-            console.log(err);
+        HandleError(error, file, file_list) {
+            this.$message.error(`文件 ${file.name} 上传失败！${error}`);
         },
         BeforeUpload(file) {
             return true; // 已在 HandleChange() 中做验证
@@ -91,7 +70,7 @@ export default {
             return -1;
         },
         HandleChange(file, file_list) {
-            var suffix = file.name.substring(file.name.lastIndexOf(".") + 1, file.name.length).toLowerCase(); // 这里的 file 没有 file.type 属性
+            var suffix = file.name.substring(file.name.lastIndexOf(".") + 1).toLowerCase(); // 这里的 file 没有 file.type 属性
             const file_limit_type = (this.type_limit.indexOf(suffix) >= 0);
             const file_limit_size = (file.size <= this.size_limit);
             if (!file_limit_type) {
@@ -110,119 +89,6 @@ export default {
             };
         },
         HandleProgress(event, file, file_list) {
-        },
-        GetAllTasks() {
-            this.$http.get("http://127.0.0.1:8080/restful", {
-                // 设置参数
-            }).then((response) => {
-                this.$message.success("列表 task 成功。");
-                console.log(response.body);
-                this.task_dict = response.body;
-            }, (response) => {
-                this.$message.error("列表 task 失败！");
-                console.log(response);
-            }).catch(function(response) {
-                this.$message.error("列表 task 异常！");
-                console.log(response);
-            });
-        },
-        AddOneTask() {
-            this.$http.post("http://127.0.0.1:8080/restful?workname=something_add", {
-                // 设置参数
-            }).then((response) => {
-                this.$message.success("增加 task 成功。");
-                console.log(response.body);
-                this.GetAllTasks();
-            }, (response) => {
-                this.$message.error("增加 task 失败！");
-                console.log(response);
-            }).catch(function(response) {
-                this.$message.error("增加 task 异常！");
-                console.log(response);
-            });
-        },
-        GetOneTask() {
-            this.$http.get(`http://127.0.0.1:8080/restful/${this.task_id_input}`, {
-                // 设置参数
-            }).then((response) => {
-                this.$message.success("单个 task 成功。");
-                console.log(response.body);
-                this.$notify.info({ title: '任务', message: `${response.body.task}` });
-            }, (response) => {
-                this.$message.error("单个 task 失败！");
-                console.log(response);
-            }).catch(function(response) {
-                this.$message.error("单个 task 异常！");
-                console.log(response);
-            });
-        },
-        DelOneTask() {
-            this.$http.delete(`http://127.0.0.1:8080/restful/${this.task_id_input}`, {
-                // 设置参数
-            }).then((response) => {
-                this.$message.success("删除 task 成功。");
-                console.log(response.body);
-                this.GetAllTasks();
-            }, (response) => {
-                this.$message.error("删除 task 失败！");
-                console.log(response);
-            }).catch(function(response) {
-                this.$message.error("删除 task 异常！");
-                console.log(response);
-            });
-        },
-        UpdateOneTask() {
-            this.$http.put(`http://127.0.0.1:8080/restful/${this.task_id_input}?workname=something_update`, {
-                // 设置参数
-            }).then((response) => {
-                this.$message.success("更新 task 成功。");
-                console.log(response.body);
-                this.GetAllTasks();
-            }, (response) => {
-                this.$message.error("更新 task 失败！");
-                console.log(response);
-            }).catch(function(response) {
-                this.$message.error("更新 task 异常！");
-                console.log(response);
-            });
-        },
-        TestSocketIO() {
-            this.$socket.emit("my_event", { msg: "Hello World" });
-        },
-        TestSocketIO_Broadcast() {
-            this.$socket.emit("my_event", { msg: "Hello World - Broadcast" });
-        }
-    },
-    sockets: {
-        connect: function() {
-            this.socket_id = this.$socket.id;
-            this.socket_connect = true;
-            console.log("socket connect:");
-        },
-        reconnect: function(times) {
-            console.log("socket reconnect: " + times);
-        },
-        reconnect_attempt: function(times) {
-            console.log("socket reconnect_attempt: " + times);
-        },
-        reconnecting: function(times) {
-            console.log("socket reconnecting: " + times);
-        },
-        reconnect_error: function(error) {
-            console.log("socket reconnect_error: " + error);
-        },
-        reconnect_failed: function(info) {
-            console.log("socket reconnect_failed: " + info);
-        },
-        disconnect: function(info) {
-            console.log("socket disconnect: " + info);
-        },
-        error: function(error) {
-            console.log("socket error: " + error);
-        },
-        my_response: function(data){
-            console.log("server data received:");
-            console.log(data);
         }
     }
 };
