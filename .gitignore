@@ -32,3 +32,6 @@
 *.app
 
 .metadata
+.settings
+.project
+.pydevproject
