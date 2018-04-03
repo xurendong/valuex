@@ -52,7 +52,8 @@ def index():
 def upload_file():
     if flask.request.method == "POST":
         for f in flask.request.files.getlist("file"):
-            f.save(os.path.join(app.config["upload_path"], f.filename))
+            save_path = os.path.join(app.config["upload_path"], f.filename)
+            f.save(save_path)
     response = { "status": 1, "message": "upload success!" }
     return flask.jsonify(response)
 

@@ -35,7 +35,7 @@ import enLocale from "element-ui/lib/locale/lang/en";
 import zhLocale from "element-ui/lib/locale/lang/zh-CN";
 
 Vue.use(VueResource);
-Vue.use(VueSocketio, socketio("http://127.0.0.1:8080/test_sio"));
+Vue.use(VueSocketio, socketio(process.env.SITE_URL + "/test_sio"));
 Vue.use(VueI18n);
 
 const i18n = new VueI18n({

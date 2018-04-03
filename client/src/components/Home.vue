@@ -19,7 +19,7 @@
 export default {
     data() {
         return {
-            upload_url: "http://127.0.0.1:8080/upload_file",
+            upload_url: process.env.SITE_URL + "/upload_file",
             file_limit: 1,
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
