@@ -30,12 +30,19 @@ import flask_socketio
 from flask_restful import reqparse
 
 import config
+import assess
 
 # -------------------------------------------------- #
 
-app = flask.Flask(__name__, static_folder = "../../../public/static", template_folder = "../../../public")
+upload_path = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
+public_folder = "../../../public"
+template_folder = public_folder
+static_folder = public_folder + "/static"
+report_folder = public_folder + "/report"
+
+app = flask.Flask(__name__, static_folder = static_folder, template_folder = template_folder)
 app.config.from_object(config.config["config_d"])
-app.config["upload_path"] = "I:\\Project\\Project\\ValueX\\public\\upload" # 必须绝对路径？
+app.config["upload_path"] = upload_path
 
 flask_cors.CORS(app, supports_credentials = True)
 
@@ -46,7 +53,7 @@ socketio = flask_socketio.SocketIO(app)
 
 @app.route("/")
 def index():
-    return flask.render_template("index.html")
+    return flask.render_template("/index.html")
 
 @app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
@@ -54,13 +61,31 @@ def upload_file():
         for f in flask.request.files.getlist("file"):
             save_path = os.path.join(app.config["upload_path"], f.filename)
             f.save(save_path)
-    response = { "status": 1, "message": "upload success!" }
+    response = { "status": 1, "message": "upload file success." }
     return flask.jsonify(response)
+
+@app.route("/make_report")
+def make_report():
+    response = {}
+    instance = assess.Assess()
+    result = instance.GetDailyReport("LHTZ_20170428001_000", 20170101, 20180228)
+    if not result.empty:
+        print(result)
+    ret = instance.ExportResultReport()
+    if ret == True:
+        response = { "status": 1, "message": "make report success." }
+    else:
+        response = { "status": 0, "message": "make report failed!" }
+    return flask.jsonify(response)
+
+@app.route("/view_report")
+def view_report():
+    return flask.render_template("/report/report.html")
 
 @app.route("/", defaults = {"path": ""})
 @app.route("/<path:path>")
 def catch_all(path):
-    return flask.render_template("index.html")
+    return flask.render_template("/index.html")
 
 # -------------------------------------------------- #
 
@@ -76,5 +101,12 @@ def test_disconnect():
 # -------------------------------------------------- #
 
 if __name__ == "__main__":
+    data_folder = "../data" # 数据文件夹
+    temp_folder = "../temp" # 模板文件夹
+    #rets_folder = "../rets" # 结果文件夹
+    rets_folder = report_folder # 结果文件夹
+    instance = assess.Assess() # 作为单件全局初始化
+    instance.InitAssess(data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder) # 不使用数据库
+    #instance.InitAssess(host = "10.0.7.53", port = 3306, user = "user", passwd = "user", data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder)
     #app.run(host = "0.0.0.0", port = 8080) # 使用 Apache 等，无法使用 WebSocket 协议
     socketio.run(app, host = "0.0.0.0", port = 8080) # 使用 eventlet 或 gevent 甚至 gunicorn 等，可以使用 WebSocket 协议

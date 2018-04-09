@@ -11,11 +11,16 @@
                 <div slot="tip" class="el-upload__tip">格式限制：xls xlsx csv，大小限制：5 MB</div>
             </el-upload>
         </div>
+        <div style="margin:10px;">
+            <el-button type="primary" @click="MakeReport">生成报告</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" @click="ViewReport">浏览报告</el-button>
+        </div>
 
     </div>
 </template>
 
 <script>
+import axios from "axios";
 export default {
     data() {
         return {
@@ -23,12 +28,28 @@ export default {
             file_limit: 1,
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
-            file_list: []
+            file_list: [],
         };
     },
     created() {
     },
     methods: {
+        MakeReport() {
+            const path = process.env.SITE_URL + "/make_report";
+            axios.get(path
+            ).then(response => {
+                if (response.data.status === 1) {
+                    this.$message.info(`报告生成成功。${response.data.message}`);
+                } else {
+                    this.$message.info(`报告生成失败！${response.data.message}`);
+                };
+            }).catch(error => {
+                console.log(error);
+            });
+        },
+        ViewReport() {
+            window.open("/view_report");
+        },
         SubmitUpload() {
             this.$refs.upload.submit();
         },
