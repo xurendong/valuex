@@ -37,16 +37,16 @@ import report
 
 class DailyReportItem(object):
     def __init__(self, **kwargs):
-        self.id = kwargs.get("id", 0)
-        self.trade_date = kwargs.get("trade_date", None)
+        self.trade_date = kwargs.get("trade_date", datetime.datetime(1970, 1, 1))
         self.account_id = kwargs.get("account_id", "")
+        self.net_unit = kwargs.get("net_unit", 0.0)
         self.net_cumulative = kwargs.get("net_cumulative", 0.0)
 
     def ToString(self):
-        return u"id：%d, " % self.id + \
-               u"trade_date：%s, " % self.trade_date.strftime("%Y-%m-%d") + \
-               u"account_id：%s, " % self.account_id + \
-               u"net_cumulative：%f" % self.net_cumulative
+        return "trade_date：%s, " % self.trade_date.strftime("%Y-%m-%d") + \
+               "account_id：%s, " % self.account_id + \
+               "net_unit：%f, " % self.net_unit + \
+               "net_cumulative：%f" % self.net_cumulative
 
 class Assess(common.Singleton):
     def __init__(self):
@@ -106,10 +106,22 @@ class Assess(common.Singleton):
         day = int_date % 100
         return "%d-%d-%d" % (year, month, day)
 
+    def TransDateIntToDate(self, int_date):
+        year = int(int_date / 10000)
+        month = int((int_date % 10000) / 100)
+        day = int(int_date % 100)
+        return datetime.datetime(year, month, day)
+
     def SaveUploadData(self, data_file):
+        sheet_name = "daily_report"
         daily_report_list = []
         xls_file = xlrd.open_workbook(data_file)
-        xls_sheet = xls_file.sheet_by_name("daily_report")
+        try:
+            xls_sheet = xls_file.sheet_by_name(sheet_name)
+        except:
+            self.log_text = "上传文件 %s 表单异常！%s" % (data_file, sheet_name)
+            self.SendMessage("E", self.log_cate, self.log_text)
+            return False
         xls_rows = xls_sheet.nrows
         xls_cols = xls_sheet.ncols
         if xls_rows < 2:
@@ -122,11 +134,11 @@ class Assess(common.Singleton):
             return False
         for i in range(xls_rows):
             if i > 0:
-                item_id = xls_sheet.row(i)[0].value
-                trade_date = xlrd.xldate.xldate_as_datetime(xls_sheet.row(i)[1].value, 0)
-                account_id = xls_sheet.row(i)[2].value
+                trade_date = self.TransDateIntToDate(xls_sheet.row(i)[0].value)
+                account_id = xls_sheet.row(i)[1].value
+                net_unit = xls_sheet.row(i)[2].value
                 net_cumulative = xls_sheet.row(i)[3].value
-                daily_report_item = DailyReportItem(id = item_id, trade_date = trade_date, account_id = account_id, net_cumulative = net_cumulative)
+                daily_report_item = DailyReportItem(trade_date = trade_date, account_id = account_id, net_unit = net_unit, net_cumulative = net_cumulative)
                 daily_report_list.append(daily_report_item)
         #for item in daily_report_list:
         #    print(item.ToString())
@@ -155,6 +167,7 @@ class Assess(common.Singleton):
                       "`id` int(32) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增序号'," + \
                       "`trade_date` date NOT NULL COMMENT '交易日期'," + \
                       "`account_id` varchar(32) NOT NULL COMMENT '账户编号'," + \
+                      "`net_unit double(16,4) DEFAULT '0.00' COMMENT '单位净值'," + \
                       "`net_cumulative` double(16,4) DEFAULT '0.00' COMMENT '累计净值'," + \
                       "PRIMARY KEY (`id`)," + \
                       "UNIQUE KEY `idx_trade_date_account_id` (`trade_date`,`account_id`)" + \
@@ -165,10 +178,10 @@ class Assess(common.Singleton):
             save_record_failed = 0
             save_record_success = 0
             total_record_number = len(daily_report_list)
-            sql = "INSERT INTO %s" % self.tb_daily_report + "(trade_date, account_id, net_cumulative) VALUES (%s, %s, %s)"
+            sql = "INSERT INTO %s" % self.tb_daily_report + "(trade_date, account_id, net_unit, net_cumulative) VALUES (%s, %s, %s, %s)"
             for i in range(save_index_from, total_record_number):
                 str_trade_date = daily_report_list[i].trade_date.strftime("%Y-%m-%d")
-                values_list.append((str_trade_date, daily_report_list[i].account_id, daily_report_list[i].net_cumulative))
+                values_list.append((str_trade_date, daily_report_list[i].account_id, daily_report_list[i].net_unit, daily_report_list[i].net_cumulative))
                 if (i - save_index_from + 1) % 3000 == 0: # 自定义每批次保存条数
                     if len(values_list) > 0: # 有记录需要保存
                         if dbm.ExecuteManySql(sql, values_list) == False:
@@ -187,8 +200,8 @@ class Assess(common.Singleton):
             self.SendMessage("I", self.log_cate, self.log_text)
         
         if len(daily_report_list) > 0: # 上面已检查
-            columns = ["trade_date", "account_id", "net_cumulative"]
-            result = pd.DataFrame(data = [[item.trade_date, item.account_id, item.net_cumulative] for item in daily_report_list], columns = columns)
+            columns = ["trade_date", "account_id", "net_unit", "net_cumulative"]
+            result = pd.DataFrame(data = [[item.trade_date, item.account_id, item.net_unit, item.net_cumulative] for item in daily_report_list], columns = columns)
             save_path = "%s/%s" % (self.folder_clearx, self.tb_daily_report)
             result.to_pickle(save_path)
             #if not result.empty:
@@ -218,7 +231,7 @@ class Assess(common.Singleton):
         dbm = self.dbm_clearx
         str_date_s = self.TransDateIntToStr(date_s)
         str_date_e = self.TransDateIntToStr(date_e)
-        columns = ["trade_date", "account_id", "net_cumulative"]
+        columns = ["trade_date", "account_id", "net_unit", "net_cumulative"]
         result = pd.DataFrame(columns = columns) # 空
         if dbm == None: # 直接读取本地文件
             if self.folder_clearx == "": # 缓存路径为空
@@ -245,7 +258,7 @@ class Assess(common.Singleton):
                     else: # 读取缓存文件
                         result = pd.read_pickle(save_path)
             if need_query == True: # 查询数据表
-                sql = "SELECT trade_date, account_id, net_cumulative " + \
+                sql = "SELECT trade_date, account_id, net_unit, net_cumulative " + \
                       "FROM %s " % self.tb_daily_report + \
                       "WHERE account_id = '%s' AND trade_date >= '%s' AND trade_date <= '%s' " % (account, str_date_s, str_date_e) + \
                       "ORDER BY trade_date ASC, account_id ASC"
