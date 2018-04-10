@@ -22,8 +22,10 @@
 # Be sure to retain the above copyright notice and conditions.
 
 import os
+import re
 import datetime
 
+import xlrd
 import numpy as np
 import pandas as pd
 
@@ -32,6 +34,19 @@ except: pass
 import common
 import dbm_mysql
 import report
+
+class DailyReportItem(object):
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id", 0)
+        self.trade_date = kwargs.get("trade_date", None)
+        self.account_id = kwargs.get("account_id", "")
+        self.net_cumulative = kwargs.get("net_cumulative", 0.0)
+
+    def ToString(self):
+        return u"id：%d, " % self.id + \
+               u"trade_date：%s, " % self.trade_date.strftime("%Y-%m-%d") + \
+               u"account_id：%s, " % self.account_id + \
+               u"net_cumulative：%f" % self.net_cumulative
 
 class Assess(common.Singleton):
     def __init__(self):
@@ -90,6 +105,98 @@ class Assess(common.Singleton):
         month = int((int_date % 10000) / 100)
         day = int_date % 100
         return "%d-%d-%d" % (year, month, day)
+
+    def SaveUploadData(self, data_file):
+        daily_report_list = []
+        xls_file = xlrd.open_workbook(data_file)
+        xls_sheet = xls_file.sheet_by_name("daily_report")
+        xls_rows = xls_sheet.nrows
+        xls_cols = xls_sheet.ncols
+        if xls_rows < 2:
+            self.log_text = "上传文件 %s 行数异常！%d" % (data_file, xls_rows)
+            self.SendMessage("E", self.log_cate, self.log_text)
+            return False
+        if xls_cols < 4:
+            self.log_text = "上传文件 %s 列数异常！%d" % (data_file, xls_cols)
+            self.SendMessage("E", self.log_cate, self.log_text)
+            return False
+        for i in range(xls_rows):
+            if i > 0:
+                item_id = xls_sheet.row(i)[0].value
+                trade_date = xlrd.xldate.xldate_as_datetime(xls_sheet.row(i)[1].value, 0)
+                account_id = xls_sheet.row(i)[2].value
+                net_cumulative = xls_sheet.row(i)[3].value
+                daily_report_item = DailyReportItem(id = item_id, trade_date = trade_date, account_id = account_id, net_cumulative = net_cumulative)
+                daily_report_list.append(daily_report_item)
+        #for item in daily_report_list:
+        #    print(item.ToString())
+        self.log_text = "上传文件导入每日报表数据 %d 行。%s" % (len(daily_report_list), data_file)
+        if len(daily_report_list) <= 0:
+            self.SendMessage("W", self.log_cate, self.log_text)
+            return False
+        else:
+            self.SendMessage("I", self.log_cate, self.log_text)
+        
+        # 先存数据库，后存本地文件，这样 GetDailyReport() 时数据库修改时间就不会晚于本地文件
+        
+        dbm = self.dbm_clearx
+        if dbm != None: # 需要保存至数据库
+            sql = "SHOW TABLES"
+            data_tables = [dbm.QueryAllSql(sql)]
+            #print data_tables
+            have_tables = re.findall("(\'.*?\')", str(data_tables))
+            have_tables = [re.sub("'", "", table) for table in have_tables]
+            #print have_tables
+            if self.tb_daily_report in have_tables:
+                sql = "TRUNCATE TABLE %s" % self.tb_daily_report
+                dbm.ExecuteSql(sql)
+            else:
+                sql = "CREATE TABLE `%s` (" % self.tb_daily_report + \
+                      "`id` int(32) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增序号'," + \
+                      "`trade_date` date NOT NULL COMMENT '交易日期'," + \
+                      "`account_id` varchar(32) NOT NULL COMMENT '账户编号'," + \
+                      "`net_cumulative` double(16,4) DEFAULT '0.00' COMMENT '累计净值'," + \
+                      "PRIMARY KEY (`id`)," + \
+                      "UNIQUE KEY `idx_trade_date_account_id` (`trade_date`,`account_id`)" + \
+                      ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8"
+                dbm.ExecuteSql(sql)
+            values_list = []
+            save_index_from = 0 #
+            save_record_failed = 0
+            save_record_success = 0
+            total_record_number = len(daily_report_list)
+            sql = "INSERT INTO %s" % self.tb_daily_report + "(trade_date, account_id, net_cumulative) VALUES (%s, %s, %s)"
+            for i in range(save_index_from, total_record_number):
+                str_trade_date = daily_report_list[i].trade_date.strftime("%Y-%m-%d")
+                values_list.append((str_trade_date, daily_report_list[i].account_id, daily_report_list[i].net_cumulative))
+                if (i - save_index_from + 1) % 3000 == 0: # 自定义每批次保存条数
+                    if len(values_list) > 0: # 有记录需要保存
+                        if dbm.ExecuteManySql(sql, values_list) == False:
+                            save_record_failed += len(values_list)
+                        else:
+                            save_record_success += len(values_list)
+                        #print("保存：", len(values_list))
+                        values_list = [] #
+            if len(values_list) > 0: # 有记录需要保存
+                if dbm.ExecuteManySql(sql, values_list) == False:
+                    save_record_failed += len(values_list)
+                else:
+                    save_record_success += len(values_list)
+                #print("保存：", len(values_list))
+            self.log_text = "每日报表数据入库：总共 %d 条，成功 %d 条，失败 %d 条。" % (total_record_number, save_record_success, save_record_failed)
+            self.SendMessage("I", self.log_cate, self.log_text)
+        
+        if len(daily_report_list) > 0: # 上面已检查
+            columns = ["trade_date", "account_id", "net_cumulative"]
+            result = pd.DataFrame(data = [[item.trade_date, item.account_id, item.net_cumulative] for item in daily_report_list], columns = columns)
+            save_path = "%s/%s" % (self.folder_clearx, self.tb_daily_report)
+            result.to_pickle(save_path)
+            #if not result.empty:
+            #    print(result)
+            self.log_text = "每日报表数据缓存：总共 %d 条，成功 %d 条。%s" % (len(daily_report_list), result.shape[0], save_path)
+            self.SendMessage("I", self.log_cate, self.log_text)
+        
+        return True
 
     def GetTableModifyTime(self, dbm, db_name, tb_name):
         modify_time = None

@@ -57,21 +57,27 @@ def index():
 
 @app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
+    response = { "status": 0, "message": "null" }
     if flask.request.method == "POST":
+        assesser = assess.Assess()
         for f in flask.request.files.getlist("file"):
             save_path = os.path.join(app.config["upload_path"], f.filename)
             f.save(save_path)
-    response = { "status": 1, "message": "upload file success." }
+            ret = assesser.SaveUploadData(save_path)
+            if ret == True:
+                response = { "status": 1, "message": "upload & save success." }
+            else:
+                response = { "status": 0, "message": "upload & save failed!" }
     return flask.jsonify(response)
 
 @app.route("/make_report")
 def make_report():
-    response = {}
-    instance = assess.Assess()
-    result = instance.GetDailyReport("LHTZ_20170428001_000", 20170101, 20180228)
+    response = { "status": 0, "message": "null" }
+    assesser = assess.Assess()
+    result = assesser.GetDailyReport("LHTZ_20170428001_000", 20170101, 20180228)
     if not result.empty:
         print(result)
-    ret = instance.ExportResultReport()
+    ret = assesser.ExportResultReport()
     if ret == True:
         response = { "status": 1, "message": "make report success." }
     else:
@@ -105,8 +111,8 @@ if __name__ == "__main__":
     temp_folder = "../temp" # 模板文件夹
     #rets_folder = "../rets" # 结果文件夹
     rets_folder = report_folder # 结果文件夹
-    instance = assess.Assess() # 作为单件全局初始化
-    instance.InitAssess(data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder) # 不使用数据库
-    #instance.InitAssess(host = "10.0.7.53", port = 3306, user = "user", passwd = "user", data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder)
+    assesser = assess.Assess() # 作为单件全局初始化
+    assesser.InitAssess(data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder) # 不使用数据库
+    #assesser.InitAssess(host = "10.0.7.53", port = 3306, user = "root", passwd = "root", data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder)
     #app.run(host = "0.0.0.0", port = 8080) # 使用 Apache 等，无法使用 WebSocket 协议
     socketio.run(app, host = "0.0.0.0", port = 8080) # 使用 eventlet 或 gevent 甚至 gunicorn 等，可以使用 WebSocket 协议

@@ -21,8 +21,8 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
+import datetime
 import threading
-from datetime import datetime
 
 class Singleton(object):
     objs = {}
@@ -57,7 +57,7 @@ class Singleton(object):
         return init_wrap
 
 def GetDateShort():
-    return datetime.now().strftime("%Y-%m-%d")
+    return datetime.datetime.now().strftime("%Y-%m-%d")
 
 def GetTimeShort():
-    return datetime.now().strftime("%H:%M:%S")
+    return datetime.datetime.now().strftime("%H:%M:%S")

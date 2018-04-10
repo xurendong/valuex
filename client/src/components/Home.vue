@@ -12,8 +12,8 @@
             </el-upload>
         </div>
         <div style="margin:10px;">
-            <el-button type="primary" @click="MakeReport">生成报告</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="success" @click="ViewReport">浏览报告</el-button>
+            <el-button type="primary" :disabled="button_make_report_disabled" @click="MakeReport">生成报告</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" :disabled="button_view_report_disabled" @click="ViewReport">浏览报告</el-button>
         </div>
 
     </div>
@@ -29,6 +29,8 @@ export default {
             size_limit: 5 * 1024 * 1024,
             type_limit: ["xls", "xlsx", "csv"],
             file_list: [],
+            button_make_report_disabled: true, // 禁用
+            button_view_report_disabled: true // 禁用
         };
     },
     created() {
@@ -40,8 +42,10 @@ export default {
             ).then(response => {
                 if (response.data.status === 1) {
                     this.$message.info(`报告生成成功。${response.data.message}`);
+                    this.button_view_report_disabled = false; // 可用
                 } else {
                     this.$message.info(`报告生成失败！${response.data.message}`);
+                    this.button_view_report_disabled = true; // 禁用
                 };
             }).catch(error => {
                 console.log(error);
@@ -73,12 +77,18 @@ export default {
             console.log(fileUrl);
             if (response.status === 1) {
                 this.$message.info(`文件 ${file.name} 上传成功。${response.message}`);
+                this.button_make_report_disabled = false; // 可用
+                this.button_view_report_disabled = true; // 禁用
             } else {
                 this.$message.info(`文件 ${file.name} 上传失败！${response.message}`);
+                this.button_make_report_disabled = true; // 禁用
+                this.button_view_report_disabled = true; // 禁用
             };
         },
         HandleError(error, file, file_list) {
             this.$message.error(`文件 ${file.name} 上传失败！${error}`);
+            this.button_make_report_disabled = true; // 禁用
+            this.button_view_report_disabled = true; // 禁用
         },
         BeforeUpload(file) {
             return true; // 已在 HandleChange() 中做验证

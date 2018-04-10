@@ -60,3 +60,5 @@ class Logger(common.Singleton):
             self.log_inst.debug("%s <%s> - %s" % (log_type, log_cate, log_info))
         elif log_type == "E" or log_type == "F":
             self.log_inst.error("%s <%s> - %s" % (log_type, log_cate, log_info))
+        if log_show != "":
+            print("%s %s %s <%s> - %s" % (common.GetDateShort(), common.GetTimeShort(), log_type, log_cate, log_info))
