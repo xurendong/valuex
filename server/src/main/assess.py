@@ -273,6 +273,10 @@ class Assess(common.Singleton):
             self.SendMessage("W", self.log_cate, "获取的 每日报表 为空！")
         return result
 
+    def StrategyEvaluation(self, daily_report):
+        # TODO:
+        return True
+
     def ExportResultReport(self):
         self.report = report.Report(temp_folder = self.temp_folder, rets_folder = self.rets_folder)
         ret = self.report.ExportReport()

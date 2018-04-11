@@ -57,7 +57,7 @@ def index():
 
 @app.route("/upload_file", methods=["GET", "POST"])
 def upload_file():
-    response = { "status": 0, "message": "null" }
+    response = { "status": 0, "message": "upload & save failed!" }
     if flask.request.method == "POST":
         assesser = assess.Assess()
         for f in flask.request.files.getlist("file"):
@@ -66,32 +66,28 @@ def upload_file():
             ret = assesser.SaveUploadData(save_path)
             if ret == True:
                 response = { "status": 1, "message": "upload & save success." }
-            else:
-                response = { "status": 0, "message": "upload & save failed!" }
     return flask.jsonify(response)
 
 @app.route("/make_report")
 def make_report():
-    response = { "status": 0, "message": "null" }
+    response = { "status": 0, "message": "make report failed!" }
     assesser = assess.Assess()
     result = assesser.GetDailyReport("LHTZ_20170428001", 20170101, 20180228)
     if not result.empty:
-        print(result)
-    ret = assesser.ExportResultReport()
-    if ret == True:
-        response = { "status": 1, "message": "make report success." }
-    else:
-        response = { "status": 0, "message": "make report failed!" }
+        #print(result)
+        ret = assesser.StrategyEvaluation(result)
+        if ret == True:
+            ret = assesser.ExportResultReport()
+            if ret == True:
+                response = { "status": 1, "message": "make report success." }
     return flask.jsonify(response)
 
 @app.route("/check_report")
 def check_report():
     file_path = public_folder + "/report/report.html"
-    response = { "status": 0, "message": "null" }
+    response = { "status": 0, "message": "check report failed!" }
     if os.path.exists(file_path):
         response = { "status": 1, "message": "check report success." }
-    else:
-        response = { "status": 0, "message": "check report failed!" }
     return flask.jsonify(response)
 
 @app.route("/view_report")
@@ -123,7 +119,7 @@ if __name__ == "__main__":
     #rets_folder = "../rets" # 结果文件夹
     rets_folder = report_folder # 结果文件夹
     assesser = assess.Assess() # 作为单件全局初始化
-    #assesser.InitAssess(data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder) # 不使用数据库
-    assesser.InitAssess(host = "10.0.7.53", port = 3306, user = "root", passwd = "root", data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder)
+    assesser.InitAssess(data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder) # 不使用数据库
+    #assesser.InitAssess(host = "10.0.7.53", port = 3306, user = "root", passwd = "root", data_folder = data_folder, temp_folder = temp_folder, rets_folder = rets_folder)
     #app.run(host = "0.0.0.0", port = 8080) # 使用 Apache 等，无法使用 WebSocket 协议
     socketio.run(app, host = "0.0.0.0", port = 8080) # 使用 eventlet 或 gevent 甚至 gunicorn 等，可以使用 WebSocket 协议
