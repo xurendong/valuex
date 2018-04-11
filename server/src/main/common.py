@@ -61,3 +61,21 @@ def GetDateShort():
 
 def GetTimeShort():
     return datetime.datetime.now().strftime("%H:%M:%S")
+
+def TransDateIntToStr(int_date):
+    year = int(int_date / 10000)
+    month = int((int_date % 10000) / 100)
+    day = int_date % 100
+    return "%d-%d-%d" % (year, month, day)
+
+def TransDateIntToDate(int_date):
+    year = int(int_date / 10000)
+    month = int((int_date % 10000) / 100)
+    day = int(int_date % 100)
+    return datetime.date(year, month, day)
+
+def TransTimeIntToStr(int_time):
+    hour = int(int_time / 10000)
+    minute = int((int_time % 10000) / 100)
+    second = int_time % 100
+    return "%d:%d:%d" % (hour, minute, second)

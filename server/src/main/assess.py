@@ -100,18 +100,6 @@ class Assess(common.Singleton):
         
         return True
 
-    def TransDateIntToStr(self, int_date):
-        year = int(int_date / 10000)
-        month = int((int_date % 10000) / 100)
-        day = int_date % 100
-        return "%d-%d-%d" % (year, month, day)
-
-    def TransDateIntToDate(self, int_date):
-        year = int(int_date / 10000)
-        month = int((int_date % 10000) / 100)
-        day = int(int_date % 100)
-        return datetime.datetime(year, month, day)
-
     def SaveUploadData(self, data_file):
         sheet_name = "daily_report"
         daily_report_list = []
@@ -134,7 +122,7 @@ class Assess(common.Singleton):
             return False
         for i in range(xls_rows):
             if i > 0:
-                trade_date = self.TransDateIntToDate(xls_sheet.row(i)[0].value)
+                trade_date = common.TransDateIntToDate(xls_sheet.row(i)[0].value)
                 account_id = xls_sheet.row(i)[1].value
                 net_unit = xls_sheet.row(i)[2].value
                 net_cumulative = xls_sheet.row(i)[3].value
@@ -201,9 +189,13 @@ class Assess(common.Singleton):
         
         if len(daily_report_list) > 0: # 上面已检查
             columns = ["trade_date", "account_id", "net_unit", "net_cumulative"]
-            result = pd.DataFrame(data = [[item.trade_date, item.account_id, item.net_unit, item.net_cumulative] for item in daily_report_list], columns = columns)
-            save_path = "%s/%s" % (self.folder_clearx, self.tb_daily_report)
-            result.to_pickle(save_path)
+            result = pd.DataFrame(columns = columns) # 空
+            if self.folder_clearx == "": # 缓存路径为空
+                self.SendMessage("E", self.log_cate, "缓存数据 每日报表 时，本地数据缓存路径为空！")
+            else:
+                result = pd.DataFrame(data = [[item.trade_date, item.account_id, item.net_unit, item.net_cumulative] for item in daily_report_list], columns = columns)
+                save_path = "%s/%s" % (self.folder_clearx, self.tb_daily_report)
+                result.to_pickle(save_path)
             #if not result.empty:
             #    print(result)
             self.log_text = "每日报表数据缓存：总共 %d 条，成功 %d 条。%s" % (len(daily_report_list), result.shape[0], save_path)
@@ -229,10 +221,13 @@ class Assess(common.Singleton):
     def GetDailyReport(self, account, date_s, date_e):
         save_path = ""
         dbm = self.dbm_clearx
-        str_date_s = self.TransDateIntToStr(date_s)
-        str_date_e = self.TransDateIntToStr(date_e)
+        str_date_s = common.TransDateIntToStr(date_s)
+        str_date_e = common.TransDateIntToStr(date_e)
+        date_date_s = common.TransDateIntToDate(date_s)
+        date_date_e = common.TransDateIntToDate(date_e)
         columns = ["trade_date", "account_id", "net_unit", "net_cumulative"]
         result = pd.DataFrame(columns = columns) # 空
+        locals = pd.DataFrame(columns = columns) # 空
         if dbm == None: # 直接读取本地文件
             if self.folder_clearx == "": # 缓存路径为空
                 self.SendMessage("E", self.log_cate, "直接缓存获取 每日报表 时，本地数据缓存路径为空！")
@@ -241,7 +236,8 @@ class Assess(common.Singleton):
                 if not os.path.exists(save_path): # 缓存文件不存在
                     self.SendMessage("E", self.log_cate, "直接缓存获取 每日报表 时，本地数据缓存文件不存在！")
                 else: # 读取缓存文件
-                    result = pd.read_pickle(save_path)
+                    locals = pd.read_pickle(save_path)
+                    self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % locals.shape[0])
         else: # 可以查询数据库
             need_query = False
             if self.folder_clearx == "": # 缓存路径为空
@@ -256,7 +252,8 @@ class Assess(common.Singleton):
                     if modify_time_db != None and modify_time_lf < modify_time_db: # 数据库时间更新 # 如果 modify_time_db 为 None 估计数据库表不存在也就不用查询了
                         need_query = True
                     else: # 读取缓存文件
-                        result = pd.read_pickle(save_path)
+                        locals = pd.read_pickle(save_path)
+                        self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % locals.shape[0])
             if need_query == True: # 查询数据表
                 sql = "SELECT trade_date, account_id, net_unit, net_cumulative " + \
                       "FROM %s " % self.tb_daily_report + \
@@ -267,6 +264,11 @@ class Assess(common.Singleton):
                     result = pd.DataFrame(data = list(rows), columns = columns)
                     if save_path != "": # 保存到文件
                         result.to_pickle(save_path)
+                self.SendMessage("I", self.log_cate, "数据库 获取 %d 条 每日报表 数据。" % result.shape[0])
+            else: # 过滤数据
+                locals = locals.ix[(locals.account_id == account), :] # 如果上传的数据只是单账户的则可以省略这步
+                result = locals.ix[(locals.trade_date >= date_date_s) & (locals.trade_date <= date_date_e), :]
+                self.SendMessage("I", self.log_cate, "本地缓存 滤得 %d 条 每日报表 数据。" % result.shape[0])
         if result.empty:
             self.SendMessage("W", self.log_cate, "获取的 每日报表 为空！")
         return result

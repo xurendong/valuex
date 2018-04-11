@@ -52,7 +52,18 @@ export default {
             });
         },
         ViewReport() {
-            window.open("/view_report");
+            const path = process.env.SITE_URL + "/check_report";
+            axios.get(path
+            ).then(response => {
+                if (response.data.status === 1) {
+                    this.$message.info(`报告查验成功。${response.data.message}`);
+                    window.open("/view_report");
+                } else {
+                    this.$message.info(`报告查验失败！${response.data.message}`);
+                };
+            }).catch(error => {
+                console.log(error);
+            });
         },
         SubmitUpload() {
             this.$refs.upload.submit();
