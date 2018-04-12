@@ -22,8 +22,6 @@
 # Be sure to retain the above copyright notice and conditions.
 
 import logging
-from datetime import datetime
-
 from logging.handlers import TimedRotatingFileHandler
 
 import common
@@ -33,12 +31,12 @@ logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s %(levelname)-5s %(message)s")
 
-debuger = TimedRotatingFileHandler("..\logs\ValueX_%s.log" % datetime.now().strftime("%Y-%m-%d"), "D", 1)
+debuger = TimedRotatingFileHandler("..\logs\ValueX_%s.log" % common.GetDateShort(), "D", 1)
 debuger.setLevel(logging.DEBUG)
 debuger.setFormatter(formatter)
 logger.addHandler(debuger)
 
-errorer = TimedRotatingFileHandler("..\logs\ValueX_%s_E.log" % datetime.now().strftime("%Y-%m-%d"), "D", 1)
+errorer = TimedRotatingFileHandler("..\logs\ValueX_%s_E.log" % common.GetDateShort(), "D", 1)
 errorer.setLevel(logging.ERROR)
 errorer.setFormatter(formatter)
 logger.addHandler(errorer)

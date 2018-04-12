@@ -29,10 +29,14 @@ import xlrd
 import numpy as np
 import pandas as pd
 
+pd.set_option("max_colwidth", 200)
+pd.set_option("display.width", 500)
+
+import common
 try: import logger
 except: pass
-import common
 import dbm_mysql
+import evaluate
 import report
 
 class DailyReportItem(object):
@@ -77,6 +81,7 @@ class Assess(common.Singleton):
         self.rets_folder = kwargs.get("rets_folder", "") # 结果文件夹
         self.db_clearx = "clearx"
         self.tb_daily_report = "daily_report"
+        self.sheet_daily_report = "daily_report"
         
         self.flag_use_database = True
         if self.host == "0.0.0.0": # 不使用数据库
@@ -101,13 +106,12 @@ class Assess(common.Singleton):
         return True
 
     def SaveUploadData(self, data_file):
-        sheet_name = "daily_report"
         daily_report_list = []
         xls_file = xlrd.open_workbook(data_file)
         try:
-            xls_sheet = xls_file.sheet_by_name(sheet_name)
+            xls_sheet = xls_file.sheet_by_name(self.sheet_daily_report)
         except:
-            self.log_text = "上传文件 %s 表单异常！%s" % (data_file, sheet_name)
+            self.log_text = "上传文件 %s 表单异常！%s" % (data_file, self.sheet_daily_report)
             self.SendMessage("E", self.log_cate, self.log_text)
             return False
         xls_rows = xls_sheet.nrows
@@ -227,7 +231,6 @@ class Assess(common.Singleton):
         date_date_e = common.TransDateIntToDate(date_e)
         columns = ["trade_date", "account_id", "net_unit", "net_cumulative"]
         result = pd.DataFrame(columns = columns) # 空
-        locals = pd.DataFrame(columns = columns) # 空
         if dbm == None: # 直接读取本地文件
             if self.folder_clearx == "": # 缓存路径为空
                 self.SendMessage("E", self.log_cate, "直接缓存获取 每日报表 时，本地数据缓存路径为空！")
@@ -236,8 +239,11 @@ class Assess(common.Singleton):
                 if not os.path.exists(save_path): # 缓存文件不存在
                     self.SendMessage("E", self.log_cate, "直接缓存获取 每日报表 时，本地数据缓存文件不存在！")
                 else: # 读取缓存文件
-                    locals = pd.read_pickle(save_path)
-                    self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % locals.shape[0])
+                    result = pd.read_pickle(save_path)
+                    self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % result.shape[0])
+                    result = result.ix[(result.account_id == account), :] # 如果上传的数据只是单账户的则可以省略这步
+                    result = result.ix[(result.trade_date >= date_date_s) & (result.trade_date <= date_date_e), :]
+                    self.SendMessage("I", self.log_cate, "本地缓存 滤得 %d 条 每日报表 数据。" % result.shape[0])
         else: # 可以查询数据库
             need_query = False
             if self.folder_clearx == "": # 缓存路径为空
@@ -252,8 +258,11 @@ class Assess(common.Singleton):
                     if modify_time_db != None and modify_time_lf < modify_time_db: # 数据库时间更新 # 如果 modify_time_db 为 None 估计数据库表不存在也就不用查询了
                         need_query = True
                     else: # 读取缓存文件
-                        locals = pd.read_pickle(save_path)
-                        self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % locals.shape[0])
+                        result = pd.read_pickle(save_path)
+                        self.SendMessage("I", self.log_cate, "本地缓存 获取 %d 条 每日报表 数据。" % result.shape[0])
+                        result = result.ix[(result.account_id == account), :] # 如果上传的数据只是单账户的则可以省略这步
+                        result = result.ix[(result.trade_date >= date_date_s) & (result.trade_date <= date_date_e), :]
+                        self.SendMessage("I", self.log_cate, "本地缓存 滤得 %d 条 每日报表 数据。" % result.shape[0])
             if need_query == True: # 查询数据表
                 sql = "SELECT trade_date, account_id, net_unit, net_cumulative " + \
                       "FROM %s " % self.tb_daily_report + \
@@ -265,17 +274,19 @@ class Assess(common.Singleton):
                     if save_path != "": # 保存到文件
                         result.to_pickle(save_path)
                 self.SendMessage("I", self.log_cate, "数据库 获取 %d 条 每日报表 数据。" % result.shape[0])
-            else: # 过滤数据
-                locals = locals.ix[(locals.account_id == account), :] # 如果上传的数据只是单账户的则可以省略这步
-                result = locals.ix[(locals.trade_date >= date_date_s) & (locals.trade_date <= date_date_e), :]
-                self.SendMessage("I", self.log_cate, "本地缓存 滤得 %d 条 每日报表 数据。" % result.shape[0])
         if result.empty:
             self.SendMessage("W", self.log_cate, "获取的 每日报表 为空！")
         return result
 
     def StrategyEvaluation(self, daily_report):
-        # TODO:
-        return True
+        daily_report = daily_report.sort_values(by = ["trade_date"], ascending = True).reset_index(drop = True) # 日期从早到晚排序
+        if not daily_report.empty:
+            self.evaluate = evaluate.Evaluate(daily_report = daily_report)
+            average_daily_net_rise = self.evaluate.CalcAverageDailyNetRise() # 001
+            print("平均每日净值涨幅：%f" % average_daily_net_rise)
+            return True
+        else:
+            return False
 
     def ExportResultReport(self):
         self.report = report.Report(temp_folder = self.temp_folder, rets_folder = self.rets_folder)
