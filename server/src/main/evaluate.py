@@ -51,3 +51,8 @@ class Evaluate():
         #print(print_matrix)
         
         return average_daily_net_rise
+
+    def CalcAnnualReturnRate(self): # 002
+        period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D")
+        annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], 250.0 / len(period_days)) - 1.0
+        return annual_return_rate

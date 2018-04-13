@@ -283,7 +283,9 @@ class Assess(common.Singleton):
         if not daily_report.empty:
             self.evaluate = evaluate.Evaluate(daily_report = daily_report)
             average_daily_net_rise = self.evaluate.CalcAverageDailyNetRise() # 001
+            annual_return_rate = self.evaluate.CalcAnnualReturnRate() # 002
             print("平均每日净值涨幅：%f" % average_daily_net_rise)
+            print("年化收益率：%f" % annual_return_rate)
             return True
         else:
             return False
