@@ -55,12 +55,42 @@ class Evaluate():
     def CalcMaxMinPeriodReturn(self): # 002
         max_period_return = self.daily_report["daily_net_rise"].max()
         min_period_return = self.daily_report["daily_net_rise"].min()
-        
         return max_period_return, min_period_return # 单周期最大涨幅、单周期最大跌幅
+
+    def CalcGoUpProbability(self): # 003
+        go_up_number = self.daily_report.ix[self.daily_report.daily_net_rise > 0.0, :].shape[0]
+        go_up_probability = go_up_number / self.daily_report.shape[0]
+        return go_up_probability # 上涨概率
+
+    def CalcMaxDaysKeepUpOrDown(self): # 004
+        days_keep_up = 0
+        days_keep_down = 0
+        max_days_keep_up = 0
+        max_days_keep_down = 0
+        loop_count= self.daily_report.shape[0] - 1
+        for i in range(loop_count):
+            if self.daily_report.iloc[i]["daily_net_rise"] > 0.0 and self.daily_report.iloc[i + 1]["daily_net_rise"] > 0.0:
+                days_keep_up += 1
+            if (self.daily_report.iloc[i]["daily_net_rise"] > 0.0 and self.daily_report.iloc[i + 1]["daily_net_rise"] <= 0.0) \
+            or (i == loop_count and self.daily_report.iloc[i + 1]["daily_net_rise"] > 0.0): # 最后一个
+                days_keep_up += 1
+                if max_days_keep_up < days_keep_up:
+                    max_days_keep_up = days_keep_up
+                days_keep_up = 0
+            
+            if self.daily_report.iloc[i]["daily_net_rise"] < 0.0 and self.daily_report.iloc[i + 1]["daily_net_rise"] < 0.0:
+                days_keep_down += 1
+            if (self.daily_report.iloc[i]["daily_net_rise"] < 0.0 and self.daily_report.iloc[i + 1]["daily_net_rise"] >= 0.0) \
+            or (i == loop_count and self.daily_report.iloc[i + 1]["daily_net_rise"] < 0.0): # 最后一个
+                days_keep_down += 1
+                if max_days_keep_down < days_keep_down:
+                    max_days_keep_down = days_keep_down
+                days_keep_down = 0
+        return max_days_keep_up, max_days_keep_down
 
     # max_first_to_every：从起始日到每一天区间的最大值
     # every_day_drawdown：每天对应的最大回撤
-    def CalcMaxDrawdown(self): # 003
+    def CalcMaxDrawdown(self): # 005
         current_columns = self.daily_report.columns.tolist()
         current_columns.extend(["max_first_to_every", "every_day_drawdown"])
         self.daily_report = self.daily_report.reindex(columns = current_columns)
@@ -81,8 +111,7 @@ class Evaluate():
         
         return max_drawdown_value, max_drawdown_date, drawdown_start_date # 最大回撤、最大回撤日期、回撤开始日期
 
-    def CalcAnnualReturnRate(self): # 004
+    def CalcAnnualReturnRate(self): # 006
         period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D")
         annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], 250.0 / len(period_days)) - 1.0
-        
         return annual_return_rate # 年化收益率
