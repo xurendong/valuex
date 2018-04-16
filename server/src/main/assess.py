@@ -31,6 +31,8 @@ import pandas as pd
 
 pd.set_option("max_colwidth", 200)
 pd.set_option("display.width", 500)
+#pd.set_option("display.max_row", 500)
+#pd.set_option("display.max_columns", 100)
 
 import common
 try: import logger
@@ -283,8 +285,12 @@ class Assess(common.Singleton):
         if not daily_report.empty:
             self.evaluate = evaluate.Evaluate(daily_report = daily_report)
             average_daily_net_rise = self.evaluate.CalcAverageDailyNetRise() # 001
-            annual_return_rate = self.evaluate.CalcAnnualReturnRate() # 002
+            max_period_return, min_period_return = self.evaluate.CalcMaxMinPeriodReturn() # 002
+            max_drawdown_value, max_drawdown_date, drawdown_start_date = self.evaluate.CalcMaxDrawdown() # 003
+            annual_return_rate = self.evaluate.CalcAnnualReturnRate() # 004
             print("平均每日净值涨幅：%f" % average_daily_net_rise)
+            print("单周期最大涨幅：%f," % max_period_return, "单周期最大跌幅：%f" % min_period_return)
+            print("最大回撤：%f," % max_drawdown_value, "最大回撤日期：%s," % max_drawdown_date.strftime("%Y-%m-%d"), "回撤开始日期：%s" % drawdown_start_date.strftime("%Y-%m-%d"))
             print("年化收益率：%f" % annual_return_rate)
             return True
         else:
