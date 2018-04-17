@@ -25,6 +25,7 @@ CREATE TABLE `daily_report` (
   `account_id` varchar(32) NOT NULL COMMENT '账户编号',
   `net_unit` double(16,4) DEFAULT '0.00' COMMENT '单位净值',
   `net_cumulative` double(16,4) DEFAULT '0.00' COMMENT '累计净值',
+  `refer_index` double(16,4) DEFAULT '0.00' COMMENT '参照指数',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_trade_date_account_id` (`trade_date`,`account_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
