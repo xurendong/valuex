@@ -21,12 +21,16 @@
 #
 # Be sure to retain the above copyright notice and conditions.
 
+import math
 import numpy as np
 import pandas as pd
+
+import config
 
 class Evaluate():
     def __init__(self, **kwargs):
         self.daily_report = kwargs.get("daily_report", None) # 日期从早到晚排序
+        self.config = config.config["config_p"]
 
     def __del__(self):
         pass
@@ -112,6 +116,14 @@ class Evaluate():
         return max_drawdown_value, max_drawdown_date, drawdown_start_date # 最大回撤、最大回撤日期、回撤开始日期
 
     def CalcAnnualReturnRate(self): # 006
-        period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D")
-        annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], 250.0 / len(period_days)) - 1.0
+        period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D") # 自然日填充
+        annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], self.config.days_of_year / len(period_days)) - 1.0
         return annual_return_rate # 年化收益率
+
+    def CalcReturnVolatility(self): # 007
+        return_volatility = self.daily_report["daily_net_rise"].std() * math.sqrt(self.config.days_of_year)
+        return return_volatility # 收益波动率
+
+    def CalcSharpeRatio(self, annual_return_rate, return_volatility): # 008
+        sharpe_ratio = (annual_return_rate - self.config.benchmark_rate) / return_volatility
+        return sharpe_ratio # 夏普比率
