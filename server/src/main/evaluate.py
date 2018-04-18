@@ -118,7 +118,8 @@ class Evaluate():
     def CalcAnnualReturnRate(self): # 006
         period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D") # 自然日填充
         annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], self.config.days_of_year / len(period_days)) - 1.0
-        return annual_return_rate # 年化收益率
+        index_annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "refer_index"] / self.daily_report.ix[0, "refer_index"], self.config.days_of_year / len(period_days)) - 1.0
+        return annual_return_rate, index_annual_return_rate # 年化收益率、参照指数年化收益率
 
     def CalcReturnVolatility(self): # 007
         return_volatility = self.daily_report["daily_net_rise"].std() * math.sqrt(self.config.days_of_year)
@@ -127,3 +128,25 @@ class Evaluate():
     def CalcSharpeRatio(self, annual_return_rate, return_volatility): # 008
         sharpe_ratio = (annual_return_rate - self.config.benchmark_rate) / return_volatility
         return sharpe_ratio # 夏普比率
+
+    # pre_refer_index     ：上日参照指数
+    # daily_index_increase：每日参照指数增长
+    # daily_index_rise    ：每日参照指数涨幅
+    def CalcBetaValue(self): # 009
+        current_columns = self.daily_report.columns.tolist()
+        current_columns.extend(["pre_refer_index", "daily_index_increase", "daily_index_rise"])
+        self.daily_report = self.daily_report.reindex(columns = current_columns)
+        
+        self.daily_report["pre_refer_index"] = self.daily_report["refer_index"].shift(1)
+        self.daily_report["daily_index_increase"] = self.daily_report["refer_index"].diff(1)
+        self.daily_report["daily_index_rise"] = self.daily_report["daily_index_increase"] / self.daily_report["pre_refer_index"]
+        
+        #print_matrix = self.daily_report.loc[:, ["trade_date", "refer_index", "pre_refer_index", "daily_index_increase", "daily_index_rise"]]
+        #print(print_matrix)
+        
+        beta_value = self.daily_report["daily_net_rise"].cov(self.daily_report["daily_index_rise"]) / self.daily_report["daily_index_rise"].var()
+        return beta_value # 贝塔值
+
+    def CalcAlphaValue(self, annual_return_rate, index_annual_return_rate, beta_value): # 010
+        alpha_value = (annual_return_rate - self.config.benchmark_rate) - beta_value * (index_annual_return_rate - self.config.benchmark_rate)
+        return alpha_value # 阿尔法值
