@@ -22,8 +22,10 @@
 # Be sure to retain the above copyright notice and conditions.
 
 import math
+
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 import config
 
@@ -150,3 +152,17 @@ class Evaluate():
     def CalcAlphaValue(self, annual_return_rate, index_annual_return_rate, beta_value): # 010
         alpha_value = (annual_return_rate - self.config.benchmark_rate) - beta_value * (index_annual_return_rate - self.config.benchmark_rate)
         return alpha_value # 阿尔法值
+
+    def CalcInfoRatio(self): # 011
+        return_rate_diff = self.daily_report["daily_net_rise"] - self.daily_report["daily_index_rise"]
+        annual_diff_mean = return_rate_diff.mean() * self.config.days_of_year
+        annual_diff_std = return_rate_diff.std() * math.sqrt(self.config.days_of_year)
+        info_ratio = annual_diff_mean - annual_diff_std
+        return info_ratio # 信息比率
+
+    def MakeNetValueCompare(self, save_folder): # 012
+        normalization_net_value_fund = self.daily_report["net_cumulative"] / self.daily_report["net_cumulative"][0]
+        normalization_net_value_base = self.daily_report["refer_index"] / self.daily_report["refer_index"][0]
+        normalization_net_value_fund.plot(style = "r-", figsize = (10, 5))
+        normalization_net_value_base.plot(style = "k-", figsize = (10, 5))
+        plt.savefig(save_folder + "/net_value_compare.jpg") # plt.show()

@@ -298,6 +298,7 @@ class Assess(common.Singleton):
             sharpe_ratio = self.evaluate.CalcSharpeRatio(annual_return_rate, return_volatility) # 008
             beta_value = self.evaluate.CalcBetaValue() # 009
             alpha_value = self.evaluate.CalcAlphaValue(annual_return_rate, index_annual_return_rate, beta_value) # 010
+            info_ratio = self.evaluate.CalcInfoRatio() # 011
             print("平均每日净值涨幅：%f" % average_daily_net_rise)
             print("单周期最大涨幅：%f," % max_period_return, "单周期最大跌幅：%f" % min_period_return)
             print("上涨概率：%f" % go_up_probability)
@@ -308,6 +309,8 @@ class Assess(common.Singleton):
             print("夏普比率：%f" % sharpe_ratio)
             print("贝塔值：%f" % beta_value)
             print("阿尔法值：%f" % alpha_value)
+            print("信息比率：%f" % info_ratio)
+            self.evaluate.MakeNetValueCompare(self.rets_folder) # 012
             return True
         else:
             return False
