@@ -119,12 +119,12 @@ class Evaluate():
 
     def CalcAnnualReturnRate(self): # 006
         period_days = pd.period_range(self.daily_report["trade_date"].iloc[0], self.daily_report["trade_date"].iloc[-1], freq = "D") # 自然日填充
-        annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], self.config.days_of_year / len(period_days)) - 1.0
-        index_annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "refer_index"] / self.daily_report.ix[0, "refer_index"], self.config.days_of_year / len(period_days)) - 1.0
+        annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "net_cumulative"] / self.daily_report.ix[0, "net_cumulative"], self.config.trading_days_year / len(period_days)) - 1.0
+        index_annual_return_rate = pow(self.daily_report.ix[self.daily_report.shape[0] - 1, "refer_index"] / self.daily_report.ix[0, "refer_index"], self.config.trading_days_year / len(period_days)) - 1.0
         return annual_return_rate, index_annual_return_rate # 年化收益率、参照指数年化收益率
 
     def CalcReturnVolatility(self): # 007
-        return_volatility = self.daily_report["daily_net_rise"].std() * math.sqrt(self.config.days_of_year)
+        return_volatility = self.daily_report["daily_net_rise"].std() * math.sqrt(self.config.trading_days_year)
         return return_volatility # 收益波动率
 
     def CalcSharpeRatio(self, annual_return_rate, return_volatility): # 008
@@ -155,8 +155,8 @@ class Evaluate():
 
     def CalcInfoRatio(self): # 011
         return_rate_diff = self.daily_report["daily_net_rise"] - self.daily_report["daily_index_rise"]
-        annual_diff_mean = return_rate_diff.mean() * self.config.days_of_year
-        annual_diff_std = return_rate_diff.std() * math.sqrt(self.config.days_of_year)
+        annual_diff_mean = return_rate_diff.mean() * self.config.trading_days_year
+        annual_diff_std = return_rate_diff.std() * math.sqrt(self.config.trading_days_year)
         info_ratio = annual_diff_mean - annual_diff_std
         return info_ratio # 信息比率
 

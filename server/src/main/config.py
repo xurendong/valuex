@@ -22,9 +22,8 @@
 # Be sure to retain the above copyright notice and conditions.
 
 class BasicConfig: # 基本
-    days_of_year = 250
     benchmark_rate = 0.031036 # 无风险利率 = 起始日十年期国债收益率
-    items_per_page = 10
+    trading_days_year = 250
 
 class Config_P(BasicConfig): # 生产
     produce = True

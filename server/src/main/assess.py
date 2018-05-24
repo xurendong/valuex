@@ -130,7 +130,7 @@ class Assess(common.Singleton):
             return False
         for i in range(xls_rows):
             if i > 0:
-                trade_date = common.TransDateIntToDate(xls_sheet.row(i)[0].value)
+                trade_date = common.TransDateIntToDate(int(xls_sheet.row(i)[0].value))
                 account_id = xls_sheet.row(i)[1].value
                 net_unit = xls_sheet.row(i)[2].value
                 net_cumulative = xls_sheet.row(i)[3].value
